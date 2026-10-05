@@ -2701,6 +2701,8 @@ const CONFIG = {
   // scannable code of THIS page so someone can grab you across a table.
   showShare: true,
   showQR:    true,
+  // The QR button encodes this repository URL for source/project access.
+  qrUrl:    "https://github.com/shannonjlove/shannonjlove-digital-card",
 
   // The one-line identity under your name. Wrap key words in <b>…</b>.
   // Keep it to ~3 roles/vocations. Put credentials in `credential`, not here.
@@ -2882,10 +2884,11 @@ document.getElementById('saveBtn').addEventListener('click', () => {
     const modal = document.getElementById('qrModal');
     const box = document.getElementById('qrbox');
     const openQR = () => {
-      document.getElementById('qrUrl').textContent = location.href;
+      const qrTarget = CONFIG.qrUrl || location.href;
+      document.getElementById('qrUrl').textContent = qrTarget;
       if (!box.dataset.rendered && typeof qrcode === 'function'){
         try{
-          const qr = qrcode(0, 'M'); qr.addData(location.href); qr.make();
+          const qr = qrcode(0, 'M'); qr.addData(qrTarget); qr.make();
           let svg = qr.createSvgTag({ cellSize: 8, margin: 12, scalable: true });
           svg = svg.replace(/fill="white"/g, 'fill="#FBF1E6"')
                    .replace(/fill="black"/g, 'fill="#104241"');
