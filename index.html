@@ -330,6 +330,16 @@
   }
 
   :focus-visible{ outline:2px solid var(--sand); outline-offset:3px; border-radius:8px; }
+
+/* ---- Leave your info (logs to Google Sheet; hidden until CONTACT_ENDPOINT is set) ---- */
+.lead-wrap[hidden] { display: none; }
+.lead { position: relative; display: flex; flex-direction: column; gap: 10px; }
+.lead label { display: flex; flex-direction: column; gap: 6px; font-size: 12.5px; color: var(--cream); }
+.lead .opt { color: var(--cream-dim); font-weight: 400; }
+.lead input, .lead textarea { font: 16px var(--sans); color: var(--cream); background: rgba(255,255,255,0.04); border: 1px solid var(--line); border-radius: 13px; padding: 12px 14px; min-height: 46px; }
+.lead textarea { min-height: 84px; resize: vertical; }
+.lead .hp { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+.lead .status { min-height: 18px; margin: 0; font-size: 13px; color: var(--sand); text-align: center; }
 </style>
 </head>
 <body>
@@ -361,6 +371,21 @@
 
     <div class="sep reveal">Follow along</div>
     <nav class="socials reveal" id="socials" aria-label="Social profiles"></nav>
+
+    <section class="lead-wrap" id="leadWrap" hidden aria-labelledby="leadTitle">
+      <div class="sep" id="leadTitle">Leave your info</div>
+      <form class="lead" id="leadForm" novalidate>
+        <label>Name <input name="name" autocomplete="name" required></label>
+        <label>Email <input name="email" type="email" autocomplete="email" inputmode="email"></label>
+        <label>Phone <span class="opt">(optional)</span> <input name="phone" type="tel" autocomplete="tel" inputmode="tel"></label>
+        <label>Company / role <span class="opt">(optional)</span> <input name="company" autocomplete="organization"></label>
+        <label>How we met <span class="opt">(optional)</span> <input name="met" placeholder="e.g. AFM panel, Houston"></label>
+        <label>Note <span class="opt">(optional)</span> <textarea name="note"></textarea></label>
+        <div class="hp" aria-hidden="true"><label>Website <input name="website" tabindex="-1" autocomplete="off"></label></div>
+        <button type="submit" class="save">Send my info to Shannon</button>
+        <p class="status" id="leadStatus" role="status" aria-live="polite"></p>
+      </form>
+    </section>
 
     <footer class="reveal" id="footer"></footer>
   </main>
@@ -2902,6 +2927,40 @@ document.getElementById('saveBtn').addEventListener('click', () => {
     document.getElementById('qrClose').addEventListener('click', closeQR);
     modal.addEventListener('click', (e)=>{ if (e.target === modal) closeQR(); });
   }
+})();
+</script>
+<script>
+/* ---- Leave your info → Google Sheet ("Contact Card — Incoming Contacts") ----
+   Paste the Apps Script web-app /exec URL below (see contact-capture/Code.gs).
+   While it's empty the form stays hidden. */
+(() => {
+  const CONTACT_ENDPOINT = '';
+  const wrap = document.getElementById('leadWrap');
+  if (!CONTACT_ENDPOINT) return;
+  wrap.hidden = false;
+  const form = document.getElementById('leadForm');
+  const status = document.getElementById('leadStatus');
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const d = new FormData(form);
+    if (!d.get('name').trim() || (!d.get('email').trim() && !d.get('phone').trim())) {
+      status.textContent = 'Please add your name and an email or phone.';
+      return;
+    }
+    const btn = form.querySelector('button');
+    btn.disabled = true; status.textContent = 'Sending…';
+    try {
+      d.set('source', location.hostname);
+      // Form-encoded POST is a CORS "simple request"; Apps Script web apps
+      // return a readable JSON body, so only clear the form once it says ok.
+      const res = await fetch(CONTACT_ENDPOINT, { method: 'POST', body: new URLSearchParams(d) });
+      const out = await res.json();
+      if (!out.ok) throw new Error(out.error || 'Not saved');
+      form.reset(); status.textContent = 'Thanks — Shannon will be in touch.';
+    } catch {
+      status.textContent = 'Couldn’t send. Please email sjlove@shannonjeffreylove.com.';
+    } finally { btn.disabled = false; }
+  });
 })();
 </script>
 </body>
