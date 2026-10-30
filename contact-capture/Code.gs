@@ -15,7 +15,11 @@ function doPost(e) {
     // Spam trap: real people never fill the hidden "website" field
     if (p.website) return json_({ ok: true });
 
-    const clean = v => String(v || '').replace(/^[=+\-@]/, "'$&").slice(0, MAX_LEN).trim();
+    // Trim first, then neutralize anything Sheets would read as a formula
+    const clean = v => {
+      const s = String(v || '').trim().slice(0, MAX_LEN);
+      return /^[=+\-@\t\r]/.test(s) ? "'" + s : s;
+    };
     const name = clean(p.name);
     const email = clean(p.email);
     const phone = clean(p.phone);
